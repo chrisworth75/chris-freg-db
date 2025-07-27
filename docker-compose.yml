@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15  # or latest stable
+    container_name: freg-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fees
+    volumes:
+      - ./db-init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
