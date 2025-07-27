@@ -15,14 +15,14 @@ pipeline {
                 script {
                     echo "Starting PostgreSQL container with mounted SQL files"
                     sh """
-                        docker rm -f \$POSTGRES_CONTAINER || true
+                        docker rm -f ${POSTGRES_CONTAINER} || true
 
                         docker run -d \
-                          --name \$POSTGRES_CONTAINER \
-                          -e POSTGRES_PASSWORD=\$POSTGRES_PASSWORD \
-                          -e POSTGRES_DB=\$POSTGRES_DB \
-                          -v \$PWD/db-init:/docker-entrypoint-initdb.d \
-                          -p \$POSTGRES_PORT:5432 \
+                          --name ${POSTGRES_CONTAINER} \
+                          -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
+                          -e POSTGRES_DB=${POSTGRES_DB} \
+                          -v \${PWD}/db-init:/docker-entrypoint-initdb.d \
+                          -p ${POSTGRES_PORT}:5432 \
                           postgres:15
                     """
                 }
@@ -32,10 +32,10 @@ pipeline {
         stage('Verify Schema Loaded') {
             steps {
                 script {
-                    sh """
+                    sh '''
                         echo "Waiting for Postgres to become ready..."
                         for i in {1..10}; do
-                          if docker exec \$POSTGRES_CONTAINER pg_isready -U postgres; then
+                          if docker exec ${POSTGRES_CONTAINER} pg_isready -U postgres; then
                             echo "Postgres is ready!"
                             break
                           fi
@@ -43,18 +43,22 @@ pipeline {
                         done
 
                         echo "Checking if tables exist..."
-                        docker exec \$POSTGRES_CONTAINER psql -U postgres -d \$POSTGRES_DB -c '\\dt'
-                    """
+                        docker exec ${POSTGRES_CONTAINER} psql -U postgres -d ${POSTGRES_DB} -c '\\dt'
+                    '''
                 }
             }
         }
-    }
-    stage('Trigger API Build') {
-        steps {
-            build job: 'chris-freg-api-multibranch', wait: false
+
+        stage('Trigger API Build') {
+            steps {
+                build job: 'chris-freg-api-multibranch', wait: false
+            }
         }
     }
 
-
-
+    post {
+        always {
+            echo "Pipeline finished. Postgres container ${POSTGRES_CONTAINER} should still be running."
+        }
+    }
 }
