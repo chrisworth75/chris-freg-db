@@ -49,11 +49,12 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-            echo 'Cleaning up container...'
-            sh 'docker rm -f $POSTGRES_CONTAINER || true'
+    stage('Trigger API Build') {
+        steps {
+            build job: 'chris-freg-api-multibranch', wait: false
         }
     }
+
+
+
 }
