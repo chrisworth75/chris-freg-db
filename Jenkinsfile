@@ -3,9 +3,9 @@ pipeline {
     agent any
 
     environment {
-        POSTGRES_CONTAINER = 'fregdb-postgres'
-        POSTGRES_PASSWORD = 'mypassword'
-        POSTGRES_DB = 'fregdb'
+        POSTGRES_CONTAINER = 'freg-db'
+        POSTGRES_PASSWORD = 'postgres'
+        POSTGRES_DB = 'fees'
         POSTGRES_PORT = '5432'
     }
 
