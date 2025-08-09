@@ -19,6 +19,7 @@ pipeline {
 
                         docker run -d \
                           --name ${POSTGRES_CONTAINER} \
+                          -e POSTGRES_USER=${POSTGRES_USER} \
                           -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
                           -e POSTGRES_DB=${POSTGRES_DB} \
                           -v \${PWD}/db-init:/docker-entrypoint-initdb.d \
