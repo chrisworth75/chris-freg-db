@@ -34,7 +34,7 @@ pipeline {
                 script {
                     sh '''
                         echo "Waiting for Postgres to become ready..."
-                        for i in {1..10}; do
+                        for i in {1..30}; do
                           if docker exec ${POSTGRES_CONTAINER} pg_isready -U postgres; then
                             echo "Postgres is ready!"
                             break
