@@ -26,6 +26,8 @@ pipeline {
                           -v \${PWD}/db-init:/docker-entrypoint-initdb.d \
                           -p ${POSTGRES_PORT}:5432 \
                           postgres:15
+                    sleep 10
+                    docker logs ${POSTGRES_CONTAINER}
                     """
                 }
             }
