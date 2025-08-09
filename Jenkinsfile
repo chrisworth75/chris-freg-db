@@ -4,6 +4,7 @@ pipeline {
 
     environment {
         POSTGRES_CONTAINER = 'freg-db'
+        POSTGRES_USER = 'postgres'
         POSTGRES_PASSWORD = 'postgres'
         POSTGRES_DB = 'fees'
         POSTGRES_PORT = '5432'
