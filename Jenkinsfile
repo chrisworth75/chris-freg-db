@@ -55,7 +55,7 @@ pipeline {
 
         stage('Trigger API Build') {
             steps {
-                build job: 'chris-freg-api-multibranch', wait: false
+                build job: 'chris-freg-api', wait: false
             }
         }
     }
