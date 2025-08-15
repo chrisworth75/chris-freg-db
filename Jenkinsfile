@@ -14,48 +14,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo "Starting PostgreSQL container with mounted SQL files"
-                    sh """
-                        docker rm -f ${POSTGRES_CONTAINER} || true
-
-                        docker run -d \
-                          --name ${POSTGRES_CONTAINER} \
-                          -e POSTGRES_USER=${POSTGRES_USER} \
-                          -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
-                          -e POSTGRES_DB=${POSTGRES_DB} \
-                          -v \${PWD}/db-init:/docker-entrypoint-initdb.d \
-                          -p ${POSTGRES_PORT}:5432 \
-                          postgres:15
-                    sleep 10
-                    docker logs ${POSTGRES_CONTAINER}
-                    """
-                }
-            }
-        }
-
-        stage('Verify Schema Loaded') {
-            steps {
-                script {
-                    sh '''
-                        echo "Waiting for Postgres to become ready..."
-                        for i in {1..30}; do
-                          if docker exec ${POSTGRES_CONTAINER} pg_isready -U postgres; then
-                            echo "Postgres is ready!"
-                            break
-                          fi
-                          sleep 2
-                        done
-
-                        echo "Checking if tables exist..."
-                        docker exec ${POSTGRES_CONTAINER} psql -U postgres -d ${POSTGRES_DB} -c '\\dt'
-                    '''
+                    echo "This step is now handled by docker-compose."
                 }
             }
         }
 
         stage('Trigger API Build') {
             steps {
-                build job: 'chris-freg-api', wait: false
+                echo "Triggering API build is disabled for local development."
             }
         }
     }
