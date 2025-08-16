@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -39,7 +40,10 @@ pipeline {
         success {
             script {
                 echo "Triggering chris-freg-api build."
-                build job: 'chris-freg-api'
+                build job: 'chris-freg-api/main', wait: true, propagate: true
+
+                echo "Triggering chris-freg frontend build."
+                build job: 'chris-freg/main', wait: true, propagate: true
             }
         }
     }
