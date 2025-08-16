@@ -20,14 +20,12 @@ pipeline {
 
         stage('Start Container') {
             steps {
-                script {
-                    def composeFile = 'docker-compose.yml'
-                    def composeFileBak = 'docker-compose.yml.bak'
-                    if (fileExists(composeFileBak) && !fileExists(composeFile)) {
-                        sh "mv ${composeFileBak} ${composeFile}"
-                    }
-                    sh "docker-compose up -d"
-                }
+                sh '''
+                    if [ -f docker-compose.yml.bak ] && [ ! -f docker-compose.yml ]; then
+                        mv docker-compose.yml.bak docker-compose.yml
+                    fi
+                    docker-compose up -d
+                '''
             }
         }
 
