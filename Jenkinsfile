@@ -37,8 +37,10 @@ pipeline {
             echo "Pipeline finished. Postgres container ${POSTGRES_CONTAINER} should still be running."
         }
         success {
-            echo "Triggering chris-freg-api build."
-            build job: 'chris-freg-api'
+            script {
+                echo "Triggering chris-freg-api build."
+                build job: 'chris-freg-api'
+            }
         }
     }
 }
