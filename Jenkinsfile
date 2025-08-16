@@ -24,6 +24,7 @@ pipeline {
                     if [ -f docker-compose.yml.bak ] && [ ! -f docker-compose.yml ]; then
                         mv docker-compose.yml.bak docker-compose.yml
                     fi
+                    docker-compose down
                     docker-compose up -d
                 '''
             }
