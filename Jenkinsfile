@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -15,6 +14,19 @@ pipeline {
             steps {
                 script {
                     echo "This step is now handled by docker-compose."
+                }
+            }
+        }
+
+        stage('Start Container') {
+            steps {
+                script {
+                    def composeFile = 'docker-compose.yml'
+                    def composeFileBak = 'docker-compose.yml.bak'
+                    if (fileExists(composeFileBak) && !fileExists(composeFile)) {
+                        sh "mv ${composeFileBak} ${composeFile}"
+                    }
+                    sh "docker-compose up -d"
                 }
             }
         }
