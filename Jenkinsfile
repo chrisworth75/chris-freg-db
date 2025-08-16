@@ -24,7 +24,8 @@ pipeline {
                     if [ -f docker-compose.yml.bak ] && [ ! -f docker-compose.yml ]; then
                         mv docker-compose.yml.bak docker-compose.yml
                     fi
-                    docker-compose down
+                    docker stop freg-db || true
+                    docker rm freg-db || true
                     docker-compose up -d
                 '''
             }
