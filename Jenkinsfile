@@ -38,7 +38,7 @@ pipeline {
         }
         success {
             echo "Triggering chris-freg-api build."
-            build 'chris-freg-api'
+            build job: 'chris-freg-api'
         }
     }
 }
