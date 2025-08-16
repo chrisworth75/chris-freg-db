@@ -30,17 +30,15 @@ pipeline {
                 '''
             }
         }
-
-        stage('Trigger API Build') {
-            steps {
-                echo "Triggering API build is disabled for local development."
-            }
-        }
     }
 
     post {
         always {
             echo "Pipeline finished. Postgres container ${POSTGRES_CONTAINER} should still be running."
+        }
+        success {
+            echo "Triggering chris-freg-api build."
+            build 'chris-freg-api'
         }
     }
 }
