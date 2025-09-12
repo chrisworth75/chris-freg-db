@@ -8,9 +8,20 @@ pipeline {
         POSTGRES_PASSWORD = 'postgres'
         POSTGRES_DB = 'fees'
         POSTGRES_PORT = '5432'
+        NETWORK_NAME = 'freg-net'
     }
 
     stages {
+        stage('Ensure Network') {
+            steps {
+                sh '''
+                    if ! docker network ls --format '{{.Name}}' | grep -w ${NETWORK_NAME}; then
+                        docker network create ${NETWORK_NAME}
+                    fi
+                '''
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -28,6 +39,7 @@ pipeline {
                     docker stop freg-db || true
                     docker rm freg-db || true
                     docker-compose up -d
+                    docker network connect ${NETWORK_NAME} freg-db || true
                 '''
             }
         }
