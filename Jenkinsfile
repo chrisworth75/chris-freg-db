@@ -40,10 +40,10 @@ pipeline {
         success {
             script {
                 echo "Triggering chris-freg-api build."
-                build job: 'chris-freg-api/main', wait: true, propagate: true
+                build job: 'chris-freg-api/main', wait: true, propagate: false
 
                 echo "Triggering chris-freg frontend build."
-                build job: 'chris-freg/main', wait: true, propagate: true
+                build job: 'chris-freg/main', wait: true, propagate: false
             }
         }
     }
