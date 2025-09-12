@@ -3,12 +3,7 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '18'
         TEST_DB_CONTAINER = 'postgres-migration-test'
-    }
-
-    tools {
-        nodejs "${NODE_VERSION}"
     }
 
     stages {
@@ -106,11 +101,12 @@ pipeline {
 
     post {
         always {
-            sh """
-                docker stop ${TEST_DB_CONTAINER} || true
-                docker rm ${TEST_DB_CONTAINER} || true
-            """
-            cleanWs()
+            script {
+                sh """
+                    docker stop postgres-migration-test || true
+                    docker rm postgres-migration-test || true
+                """
+            }
         }
     }
 }
