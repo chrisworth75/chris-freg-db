@@ -1,62 +1,116 @@
-
+// Jenkinsfile in chris-freg-db repository
 pipeline {
     agent any
 
     environment {
-        POSTGRES_CONTAINER = 'freg-db'
-        POSTGRES_USER = 'postgres'
-        POSTGRES_PASSWORD = 'postgres'
-        POSTGRES_DB = 'fees'
-        POSTGRES_PORT = '5432'
-        NETWORK_NAME = 'freg-net'
+        NODE_VERSION = '18'
+        TEST_DB_CONTAINER = 'postgres-migration-test'
+    }
+
+    tools {
+        nodejs "${NODE_VERSION}"
     }
 
     stages {
-        stage('Ensure Network') {
+        stage('Checkout') {
             steps {
-                sh '''
-                    if ! docker network ls --format '{{.Name}}' | grep -w ${NETWORK_NAME}; then
-                        docker network create ${NETWORK_NAME}
-                    fi
-                '''
+                checkout scm
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Setup Test Environment') {
             steps {
                 script {
-                    echo "This step is now handled by docker-compose."
+                    sh """
+                        docker stop ${TEST_DB_CONTAINER} || true
+                        docker rm ${TEST_DB_CONTAINER} || true
+                        docker run -d \\
+                        --name ${TEST_DB_CONTAINER} \\
+                        --platform=linux/arm64 \\
+                        -e POSTGRES_PASSWORD=postgres \\
+                        -e POSTGRES_DB=migration_test \\
+                        -p 5434:5432 \\
+                        postgres:15-alpine
+                    """
+                    sleep 10
                 }
             }
         }
 
-        stage('Start Container') {
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+
+        stage('Validate SQL') {
             steps {
                 sh '''
-                    if [ -f docker-compose.yml.bak ] && [ ! -f docker-compose.yml ]; then
-                        mv docker-compose.yml.bak docker-compose.yml
-                    fi
-                    docker stop freg-db || true
-                    docker rm freg-db || true
-                    docker-compose up -d
-                    docker network connect ${NETWORK_NAME} freg-db || true
+                    # Install sqlfluff if not already installed
+                    pip3 install sqlfluff || true
+                    sqlfluff lint migrations/ --dialect postgres || true
                 '''
+            }
+        }
+
+        stage('Test Migrations') {
+            steps {
+                script {
+                    sh '''
+                        export DATABASE_URL="postgresql://postgres:postgres@localhost:5434/migration_test"
+
+                        # Test dry run
+                        npm run migrate:dry-run
+
+                        # Test up migrations
+                        npm run migrate:up
+
+                        # Validate schema
+                        npm run schema:validate
+
+                        # Test down migrations
+                        npm run migrate:down
+
+                        # Test up again to ensure repeatability
+                        npm run migrate:up
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Migrations') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    // Backup production database first
+                    sh '''
+                        docker exec postgres-prod pg_dump -U postgres freg_prod > backup-$(date +%Y%m%d_%H%M%S).sql
+                    '''
+
+                    // Run migrations on production
+                    sh '''
+                        export DATABASE_URL="postgresql://postgres:prodpassword@localhost:5432/freg_prod"
+                        npm run migrate:production
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'backup-*.sql', fingerprint: true
+                }
             }
         }
     }
 
     post {
         always {
-            echo "Pipeline finished. Postgres container ${POSTGRES_CONTAINER} should still be running."
-        }
-        success {
-            script {
-                echo "Triggering chris-freg-api build."
-                build job: 'chris-freg-api/main', wait: true, propagate: false
-
-                echo "Triggering chris-freg frontend build."
-                build job: 'chris-freg/main', wait: true, propagate: false
-            }
+            sh """
+                docker stop ${TEST_DB_CONTAINER} || true
+                docker rm ${TEST_DB_CONTAINER} || true
+            """
+            cleanWs()
         }
     }
 }
