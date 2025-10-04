@@ -63,30 +63,52 @@ pipeline {
             }
         }
 
-        stage('Deploy Migrations') {
+        stage('Deploy Database') {
             when {
                 branch 'main'
             }
             steps {
                 script {
-                    // Backup production database first
                     sh '''
-                        echo "Creating database backup..."
-                        docker exec postgres-prod pg_dump -U postgres freg_prod > backup-$(date +%Y%m%d_%H%M%S).sql || echo "No production DB to backup"
-                    '''
+                        echo "📦 Deploying fees database..."
 
-                    // Run migrations on production
-                    sh '''
-                        echo "Running production migrations..."
-                        echo "Production migrations completed successfully"
+                        # Check if freg-network exists, create if not
+                        docker network inspect freg-network >/dev/null 2>&1 || docker network create freg-network
+
+                        # Stop and remove existing container
+                        docker stop freg-db || true
+                        docker rm freg-db || true
+
+                        # Run new database container with initialization scripts
+                        docker run -d \\
+                          --name freg-db \\
+                          --network freg-network \\
+                          --restart unless-stopped \\
+                          -e POSTGRES_USER=postgres \\
+                          -e POSTGRES_PASSWORD=postgres \\
+                          -e POSTGRES_DB=fees \\
+                          -v "$(pwd)/db-init:/docker-entrypoint-initdb.d:ro" \\
+                          -p 5435:5432 \\
+                          postgres:15-alpine
+
+                        echo "⏳ Waiting for database to be ready..."
+                        sleep 10
+
+                        # Wait for database to be ready
+                        for i in {1..30}; do
+                            if docker exec freg-db pg_isready -U postgres >/dev/null 2>&1; then
+                                echo "✅ Database is ready!"
+                                break
+                            fi
+                            echo "Waiting for database... ($i/30)"
+                            sleep 2
+                        done
+
+                        # Verify data loaded
+                        echo "📊 Checking database..."
+                        docker exec freg-db psql -U postgres -d fees -c "SELECT COUNT(*) as fee_count FROM fees;"
+                        docker exec freg-db psql -U postgres -d fees -c "SELECT status, COUNT(*) FROM fees GROUP BY status ORDER BY status;"
                     '''
-                }
-            }
-            post {
-                always {
-                    script {
-                        sh 'ls -la backup-*.sql 2>/dev/null || echo "No backup files to archive"'
-                    }
                 }
             }
         }
