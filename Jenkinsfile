@@ -104,6 +104,21 @@ pipeline {
                             sleep 2
                         done
 
+                        # Wait for init scripts to complete and table to be created
+                        echo "⏳ Waiting for fees table to be created..."
+                        for i in $(seq 1 30); do
+                            if docker exec freg-db psql -U postgres -d fees -tAc "SELECT 1 FROM pg_tables WHERE tablename='fees'" 2>/dev/null | grep -q 1; then
+                                echo "✅ Fees table exists!"
+                                break
+                            fi
+                            if [ $i -eq 30 ]; then
+                                echo "❌ Fees table was not created after 60 seconds"
+                                exit 1
+                            fi
+                            echo "Waiting for table creation... ($i/30)"
+                            sleep 2
+                        done
+
                         # Verify data loaded
                         echo "📊 Checking database..."
                         docker exec freg-db psql -U postgres -d fees -c "SELECT COUNT(*) as fee_count FROM fees;"
