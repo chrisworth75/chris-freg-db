@@ -55,7 +55,7 @@ pipeline {
                         echo "Running migration tests..."
                         # These would be real migration commands when implemented
                         echo "Migration dry-run: OK"
-                        echo "Migration up: OK" 
+                        echo "Migration up: OK"
                         echo "Schema validation: OK"
                         echo "Migration down: OK"
                     '''
@@ -95,7 +95,7 @@ pipeline {
                         sleep 10
 
                         # Wait for database to be ready
-                        for i in {1..30}; do
+                        for i in $(seq 1 30); do
                             if docker exec freg-db pg_isready -U postgres >/dev/null 2>&1; then
                                 echo "✅ Database is ready!"
                                 break
